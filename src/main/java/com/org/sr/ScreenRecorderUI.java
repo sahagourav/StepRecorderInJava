@@ -1,12 +1,18 @@
 package com.org.sr;
 
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.logging.LogManager;
@@ -30,7 +36,7 @@ import org.jnativehook.NativeHookException;
 import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
 
-public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMouseInputListener {
+public class ScreenRecorderUI extends JFrame implements WindowListener, ActionListener, NativeMouseInputListener {
 
 	private static final long serialVersionUID = 1L;
 
@@ -47,17 +53,29 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 
 	private Boolean isRecording = Boolean.FALSE;
 	private Boolean isInit = Boolean.TRUE;
-	private Long index = 0L;
+	private Long index = 1L;
 
+	
+	private static int saveConfig = 0;
 	private Boolean isMouseListenerActive = Boolean.FALSE;
-
-	private Integer previousExtendedState;
+	private static String folderToBeDeleted = "";
+	
 	
 	public static void main(String[] args) {
 		LogManager.getLogManager().reset();
 
 		// Get the logger for "org.jnativehook" and set the level to off.
 		Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			System.out.println(ScreenRecorderUI.saveConfig);
+			if(ScreenRecorderUI.saveConfig == 1) {
+				try {
+					FileUtils.deleteDirectory(new File(ScreenRecorderUI.folderToBeDeleted));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}));
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -71,6 +89,7 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 	}
 
 	public ScreenRecorderUI() {
+		setAlwaysOnTop(true);
 		setAutoRequestFocus(false);
 		ClassLoader classloader = Thread.currentThread().getContextClassLoader();
 		try {
@@ -90,8 +109,7 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 		setBounds(100, 100, 660, 170);
 		jFrame = new JPanel();
 		jFrame.setBorder(new EmptyBorder(5, 5, 5, 5));
-		
-		this.previousExtendedState = this.getExtendedState();
+		this.addWindowListener(this);
 
 		setContentPane(jFrame);
 		jFrame.setLayout(null);
@@ -170,6 +188,8 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 		pathLabel.setBounds(11, 50, 99, 30);
 		jFrame.add(pathLabel);
 	}
+	
+	//ActionListener Overridden Function
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -227,7 +247,7 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 		} else if ("Save".equalsIgnoreCase(e.getActionCommand())) {
 			try {
 				String ObjButtons[] = { "Yes", "No" };
-				int saveConfig = JOptionPane.showOptionDialog(this, "Do you also want to keep the screenshots?",
+				saveConfig = JOptionPane.showOptionDialog(this, "Do you also want to keep the screenshots?",
 						"Save Confirmation", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null,
 						ObjButtons, ObjButtons[0]);
 				if(saveConfig == JOptionPane.YES_OPTION) {
@@ -235,7 +255,8 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 					JOptionPane.showMessageDialog(this, "Document saved successfully and screenshots saved in folder:\n"+path.getText()+"\\"+name.getText(), "Save Successful", JOptionPane.INFORMATION_MESSAGE);
 				}else {
 					DocumentSaver.saveToDocumentFile(path.getText().trim() + "\\", name.getText());
-					FileUtils.forceDeleteOnExit(new File(path.getText().trim()+"\\"+name.getText()+"\\"));
+					//FileUtils.forceDeleteOnExit(new File(path.getText().trim()+"\\"+name.getText()+"\\"));
+					ScreenRecorderUI.folderToBeDeleted = path.getText().trim()+"\\"+name.getText()+"\\";
 					JOptionPane.showMessageDialog(this, "Document saved successfully\nand screenshots deleted!", "Save Successful", JOptionPane.INFORMATION_MESSAGE);
 				}
 			} catch (IOException e1) {
@@ -305,6 +326,8 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 			save.setEnabled(Boolean.FALSE);
 		}
 	}
+	
+	//NativeMouseInputListener Overridden Functions
 
 	@Override
 	public void nativeMouseClicked(NativeMouseEvent nativeEvent) {
@@ -326,10 +349,9 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 			 */
 			Double jFrameInitCoordinateX = this.getLocationOnScreen().getX();
 			Double jFrameInitCoordinateY = this.getLocationOnScreen().getY();
-			Double jFrameWidth = this.getBounds().getMaxX();
-			Double jFrameHeight = this.getBounds().getMaxY();
-			Double jFrameLastCoordinateX = jFrameInitCoordinateX + jFrameWidth;
-			Double jFrameLastCoordinateY = jFrameInitCoordinateY + jFrameHeight;
+			
+			Double jFrameLastCoordinateX = this.getBounds().getMaxX();
+			Double jFrameLastCoordinateY = this.getBounds().getMaxY();
 			if ((nativeEvent.getX() > jFrameInitCoordinateX && nativeEvent.getX() < jFrameLastCoordinateX)
 					&& (nativeEvent.getY() > jFrameInitCoordinateY && nativeEvent.getY() < jFrameLastCoordinateY)) {
 				/*
@@ -371,5 +393,45 @@ public class ScreenRecorderUI extends JFrame implements ActionListener, NativeMo
 	
 	private void handleException(Exception e) {
 		JOptionPane.showMessageDialog(this, e.getMessage(), "Exception", JOptionPane.ERROR_MESSAGE);
+	}
+	
+	//WindowListener Overridden Functions
+
+	@Override
+	public void windowActivated(WindowEvent arg0) {
+	}
+
+	@Override
+	public void windowClosed(WindowEvent arg0) {
+	}
+
+	@Override
+	public void windowClosing(WindowEvent arg0) {
+	}
+
+	@Override
+	public void windowDeactivated(WindowEvent arg0) {
+	}
+
+	@Override
+	public void windowDeiconified(WindowEvent arg0) {
+		System.out.println("DEICONIFIED : "+ this.getLocationOnScreen());
+		if (isRecording) {
+			try {
+				ScreenCapture.deleteImage(path.getText().trim() + "\\" + name.getText(), "\\" + name.getText(),
+						--index);
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
+		}
+	}
+
+	@Override
+	public void windowIconified(WindowEvent arg0) {
+		System.out.println("ICONIFIED : "+this.getLocationOnScreen());
+	}
+
+	@Override
+	public void windowOpened(WindowEvent arg0) {
 	}
 }

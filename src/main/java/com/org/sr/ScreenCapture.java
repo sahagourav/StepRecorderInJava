@@ -11,22 +11,40 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.io.FileUtils;
+
 public class ScreenCapture {
 
-	public static void captureImage(String folderPath, String name, Long index) throws IOException, AWTException {
+	public static synchronized void captureImage(String folderPath, String name, Long index) throws IOException, AWTException {
 		Dimension screensize = Toolkit.getDefaultToolkit().getScreenSize();
 		Robot rt = new Robot();
 		BufferedImage image = rt
 				.createScreenCapture(new Rectangle((int) screensize.getWidth(), (int) screensize.getHeight()));
 		File folder = new File(folderPath);
 		if (folder.exists() && folder.isDirectory()) {
-			ImageIO.write(image, "jpeg", new File(folderPath + name + "_" + index + ".jpeg"));
-			System.out.println("Screen captured " + (index+1));
+			File file = new File(folderPath + name + "_" + index + ".jpeg");
+			if(file.exists()) {
+				ImageIO.write(image, "jpeg", file);
+				System.out.println("Screen captured overridden " + index);
+			}else {
+				ImageIO.write(image, "jpeg", file);
+				System.out.println("Screen captured " + index);
+			}
 		} else {
 			folder.mkdir();
 			ImageIO.write(image, "jpeg", new File(folderPath + name + "_" + index + ".jpeg"));
-			System.out.println("Folder created and Screen captured " + (index+1));
+			System.out.println("Folder created and Screen captured " + index);
 		}
 		folder.setWritable(true);
+	}
+	
+	public static synchronized void deleteImage(String folderPath, String name, Long index) throws IOException {
+		File img = new File(folderPath + name + "_" + index + ".jpeg");
+		if(img.exists()) {
+			FileUtils.forceDelete(img);
+			System.out.println("Deleted Screenshot " + index);
+		}else {
+			throw new IOException("File doesn't exists");
+		}
 	}
 }
