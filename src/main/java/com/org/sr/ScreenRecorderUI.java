@@ -34,6 +34,7 @@ import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
+import java.awt.Toolkit;
 
 public class ScreenRecorderUI extends JFrame implements WindowListener, ActionListener, NativeMouseInputListener {
 
@@ -48,7 +49,7 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 	private JButton stop;
 	private JButton save;
 
-	private Image playImage = null, pauseImage = null, stopImage = null;
+	private Image windowIcon = null, playImage = null, pauseImage = null, stopImage = null, folderImage = null;
 
 	private Boolean isRecording = Boolean.FALSE;
 	private Boolean isInit = Boolean.TRUE;
@@ -92,20 +93,25 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 		setAutoRequestFocus(false);
 		ClassLoader classloader = Thread.currentThread().getContextClassLoader();
 		try {
+			windowIcon = new ImageIcon(classloader.getResource("Record.png")).getImage().getScaledInstance(24, 24,
+					java.awt.Image.SCALE_SMOOTH);
 			playImage = new ImageIcon(classloader.getResource("Play.png")).getImage().getScaledInstance(24, 24,
 					java.awt.Image.SCALE_SMOOTH);
 			pauseImage = new ImageIcon(classloader.getResource("Pause.png")).getImage().getScaledInstance(24, 24,
 					java.awt.Image.SCALE_SMOOTH);
 			stopImage = new ImageIcon(classloader.getResource("Stop.png")).getImage().getScaledInstance(24, 24,
 					java.awt.Image.SCALE_SMOOTH);
+			folderImage = new ImageIcon(classloader.getResource("Folder.png")).getImage().getScaledInstance(24, 24,
+					java.awt.Image.SCALE_SMOOTH);
 		} catch (Exception e) {
 			System.out.println(classloader.getResource("Play.png"));
 			e.printStackTrace();
 		}
+		setIconImage(windowIcon);
 		setTitle("Step Recorder");
 		setResizable(false);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 660, 170);
+		setBounds(100, 100, 655, 170);
 		jFrame = new JPanel();
 		jFrame.setBorder(new EmptyBorder(5, 5, 5, 5));
 		this.addWindowListener(this);
@@ -113,12 +119,13 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 		setContentPane(jFrame);
 		jFrame.setLayout(null);
 
-		nameLabel = new JLabel("Name : ");
-		nameLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		nameLabel.setBounds(12, 10, 62, 30);
+		nameLabel = new JLabel("Document Name : ");
+		nameLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		nameLabel.setBounds(12, 10, 107, 30);
 		jFrame.add(nameLabel);
 
 		name = new JTextField();
+		name.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 		name.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyTyped(KeyEvent e) {
@@ -136,56 +143,62 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 				}
 			}
 		});
-		name.setBounds(72, 10, 350, 30);
+		name.setBounds(127, 10, 266, 30);
 		nameLabel.setLabelFor(name);
 		jFrame.add(name);
 		name.setColumns(10);
 
 		path = new JLabel("");
-		path.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		path.setBounds(120, 50, 501, 30);
+		path.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		path.setBounds(127, 50, 501, 30);
 		jFrame.add(path);
 
 		start = new JButton("Start Record");
 		start.setEnabled(false);
 		// start.addMouseListener(this);
 		start.addActionListener(this);
-		start.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		start.setBounds(12, 91, 170, 30);
+		start.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		start.setBounds(12, 90, 170, 30);
 		start.setIcon(new ImageIcon(playImage));
 		jFrame.add(start);
 
 		stop = new JButton("Stop Record");
 		stop.addActionListener(this);
 		stop.setEnabled(false);
-		stop.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		stop.setBounds(194, 91, 170, 30);
+		stop.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		stop.setBounds(194, 90, 170, 30);
 		stop.setIcon(new ImageIcon(stopImage));
 		jFrame.add(stop);
 
 		save = new JButton("Save");
 		save.addActionListener(this);
 		save.setEnabled(false);
-		save.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		save.setBounds(376, 91, 120, 30);
+		save.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		save.setBounds(376, 90, 120, 30);
 		jFrame.add(save);
 
 		folderPath = new JButton("Choose Location");
-		folderPath.setFont(new Font("Tahoma", Font.PLAIN, 12));
+		folderPath.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 		folderPath.addActionListener(this);
 		folderPath.setBounds(450, 10, 178, 30);
+		folderPath.setIcon(new ImageIcon(folderImage));
 		jFrame.add(folderPath);
 
 		JButton reset = new JButton("Reset");
 		reset.addActionListener(this);
-		reset.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		reset.setBounds(508, 91, 120, 30);
+		reset.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		reset.setBounds(508, 90, 120, 30);
 		jFrame.add(reset);
 
 		JLabel pathLabel = new JLabel("Folder Selected: ");
-		pathLabel.setFont(new Font("Tahoma", Font.PLAIN, 12));
-		pathLabel.setBounds(11, 50, 99, 30);
+		pathLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		pathLabel.setBounds(12, 50, 99, 30);
 		jFrame.add(pathLabel);
+		
+		JLabel docType = new JLabel(".docx");
+		docType.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		docType.setBounds(403, 10, 37, 30);
+		jFrame.add(docType);
 	}
 
 	// ActionListener Overridden Function
