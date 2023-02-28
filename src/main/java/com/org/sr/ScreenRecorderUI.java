@@ -13,6 +13,7 @@ import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
@@ -53,12 +54,13 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 	private Boolean isInit = Boolean.TRUE;
 	private Long index = 1L;
 
-	
 	private static int saveConfig = 0;
 	private Boolean isMouseListenerActive = Boolean.FALSE;
 	private static String folderToBeDeleted = "";
-	
-	
+	private HashMap<String, Integer> taskBarBounds;
+
+	private Boolean taskbarIconClicked = Boolean.FALSE;
+
 	public static void main(String[] args) {
 		LogManager.getLogManager().reset();
 
@@ -77,6 +79,7 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 				try {
 					ScreenRecorderUI frame = new ScreenRecorderUI();
 					frame.setVisible(true);
+					frame.taskBarBounds = ScreenCapture.getTaskbarBounds();
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -89,13 +92,13 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 		setAutoRequestFocus(false);
 		ClassLoader classloader = Thread.currentThread().getContextClassLoader();
 		try {
-			playImage = new ImageIcon(classloader.getResource("Play.png")).getImage().getScaledInstance(24,
-					24, java.awt.Image.SCALE_SMOOTH);
-			pauseImage = new ImageIcon(classloader.getResource("Pause.png")).getImage().getScaledInstance(24,
-					24, java.awt.Image.SCALE_SMOOTH);
-			stopImage = new ImageIcon(classloader.getResource("Stop.png")).getImage().getScaledInstance(24,
-					24, java.awt.Image.SCALE_SMOOTH);
-		}catch(Exception e) {
+			playImage = new ImageIcon(classloader.getResource("Play.png")).getImage().getScaledInstance(24, 24,
+					java.awt.Image.SCALE_SMOOTH);
+			pauseImage = new ImageIcon(classloader.getResource("Pause.png")).getImage().getScaledInstance(24, 24,
+					java.awt.Image.SCALE_SMOOTH);
+			stopImage = new ImageIcon(classloader.getResource("Stop.png")).getImage().getScaledInstance(24, 24,
+					java.awt.Image.SCALE_SMOOTH);
+		} catch (Exception e) {
 			System.out.println(classloader.getResource("Play.png"));
 			e.printStackTrace();
 		}
@@ -184,8 +187,8 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 		pathLabel.setBounds(11, 50, 99, 30);
 		jFrame.add(pathLabel);
 	}
-	
-	//ActionListener Overridden Function
+
+	// ActionListener Overridden Function
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -241,30 +244,43 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 				this.handleException(e1);
 			}
 		} else if ("Save".equalsIgnoreCase(e.getActionCommand())) {
+			ScreenRecorderUI.folderToBeDeleted = path.getText().trim() + "\\" + name.getText() + "\\";
+			File folder = new File(ScreenRecorderUI.folderToBeDeleted);
+			if (!(folder.exists() && folder.isDirectory() && folder.listFiles().length > 0)) {
+				JOptionPane.showMessageDialog(this,
+						"No files found for saving in folder: " + path.getText() + "\\" + name.getText()
+								+ "\nPlease record a project or go to a directory where screenshots are present",
+						"No files found", JOptionPane.WARNING_MESSAGE);
+				return;
+			}
 			try {
 				String ObjButtons[] = { "Yes", "No" };
-				saveConfig = JOptionPane.showOptionDialog(this, "Do you also want to keep the screenshots?"
-						+ "\nNote: Automatic screenshot deletion not guarranteed.",
-						"Save Confirmation", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null,
-						ObjButtons, ObjButtons[0]);
-				if(saveConfig == JOptionPane.YES_OPTION) {
-					DocumentSaver.saveToDocumentFile(path.getText().trim() + "\\", name.getText());
-					JOptionPane.showMessageDialog(this, "Document saved successfully and screenshots saved in folder:\n"+path.getText()+"\\"+name.getText(), "Save Successful", JOptionPane.INFORMATION_MESSAGE);
-				}else {
-					DocumentSaver.saveToDocumentFile(path.getText().trim() + "\\", name.getText());
-					//FileUtils.forceDeleteOnExit(new File(path.getText().trim()+"\\"+name.getText()+"\\"));
-					ScreenRecorderUI.folderToBeDeleted = path.getText().trim()+"\\"+name.getText()+"\\";
-					ArrayList<File> unDeletedFiles = FileOperations.deleteFolderAndContents(folderToBeDeleted);
-					if(unDeletedFiles!=null && !unDeletedFiles.isEmpty()) {
-						JOptionPane.showMessageDialog(this, "Document saved successfully"
-								+ "\nbut some screenshots could not be deleted!"
-								+ "\nmanual deletion required", "Save Successful", JOptionPane.WARNING_MESSAGE);
+				saveConfig = JOptionPane.showOptionDialog(this,
+						"Keep the screenshots?" + "\nNote: Automatic screenshot deletion not always guarranteed.",
+						"Save Confirmation", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, ObjButtons,
+						ObjButtons[0]);
+				DocumentSaver.saveToDocumentFile(ScreenRecorderUI.folderToBeDeleted, name.getText());
+				if (saveConfig == JOptionPane.YES_OPTION) {
+					JOptionPane
+							.showMessageDialog(this,
+									"Document saved successfully and screenshots saved in folder:\n" + path.getText()
+											+ "\\" + name.getText(),
+									"Save Successful", JOptionPane.INFORMATION_MESSAGE);
+				} else {
+					ArrayList<File> unDeletedFiles = FileOperations.deleteFolderAndContents(folderToBeDeleted,
+							name.getText() + ".docx");
+					if (unDeletedFiles != null && !unDeletedFiles.isEmpty()) {
+						JOptionPane.showMessageDialog(this,
+								"Document saved successfully but some" + "\nscreenshots could not be deleted",
+								"Save Successful", JOptionPane.WARNING_MESSAGE);
 						Desktop.getDesktop().open(new File(ScreenRecorderUI.folderToBeDeleted));
-					}else {
-						JOptionPane.showMessageDialog(this, "Document saved successfully"
-								+ "\nand all screenshots deleted!", "Save Successful, Automatic Deletion Failed", JOptionPane.INFORMATION_MESSAGE);						
+					} else {
+						JOptionPane.showMessageDialog(this,
+								"Document saved successfully" + "\nand all screenshots deleted!",
+								"Save Successful, Automatic Deletion Failed", JOptionPane.INFORMATION_MESSAGE);
 					}
 				}
+				Desktop.getDesktop().open(new File(ScreenRecorderUI.folderToBeDeleted));
 			} catch (IOException e1) {
 				this.handleException(e1);
 			} catch (InvalidFormatException e1) {
@@ -280,7 +296,7 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 			start.setText("Start Record");
 			start.setIcon(new ImageIcon(playImage));
 			name.setText("");
-			index = 0L;
+			index = 1L;
 			start.setEnabled(false);
 			stop.setEnabled(false);
 			save.setEnabled(false);
@@ -303,6 +319,7 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 				if (!StringUtils.isBlank(path.getText()) && !StringUtils.isBlank(name.getText())) {
 					start.setEnabled(true);
 					stop.setEnabled(true);
+					save.setEnabled(true);
 					if (isRecording)
 						folderPath.setEnabled(false);
 					else
@@ -310,6 +327,7 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 				} else {
 					start.setEnabled(false);
 					stop.setEnabled(false);
+					save.setEnabled(false);
 					folderPath.setEnabled(true);
 				}
 			} else {
@@ -332,11 +350,12 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 			save.setEnabled(Boolean.FALSE);
 		}
 	}
-	
-	//NativeMouseInputListener Overridden Functions
+
+	// NativeMouseInputListener Overridden Functions
 
 	@Override
 	public void nativeMouseClicked(NativeMouseEvent nativeEvent) {
+		this.taskbarIconClicked = Boolean.FALSE;
 		if (nativeEvent.getButton() == NativeMouseEvent.BUTTON3
 				|| nativeEvent.getButton() == NativeMouseEvent.BUTTON2) {
 			return;
@@ -355,7 +374,7 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 			 */
 			Double jFrameInitCoordinateX = this.getLocationOnScreen().getX();
 			Double jFrameInitCoordinateY = this.getLocationOnScreen().getY();
-			
+
 			Double jFrameLastCoordinateX = this.getBounds().getMaxX();
 			Double jFrameLastCoordinateY = this.getBounds().getMaxY();
 			if ((nativeEvent.getX() > jFrameInitCoordinateX && nativeEvent.getX() < jFrameLastCoordinateX)
@@ -372,6 +391,14 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 			}
 		}
 		if (isRecording) {
+
+			// A possible notification that the taskbar of the iconified recorder was
+			// clicked, it will work in combination to DeIconified
+			if (nativeEvent.getX() >= taskBarBounds.get("MinX") && nativeEvent.getX() <= taskBarBounds.get("MaxX")
+					&& nativeEvent.getY() >= taskBarBounds.get("MinY")
+					&& nativeEvent.getX() <= taskBarBounds.get("MaxY")) {
+				this.taskbarIconClicked = Boolean.TRUE;
+			}
 			try {
 				ScreenCapture.captureImage(path.getText().trim() + "\\" + name.getText(), "\\" + name.getText(),
 						index++);
@@ -396,12 +423,12 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 	@Override
 	public void nativeMouseDragged(NativeMouseEvent nativeEvent) {
 	}
-	
+
 	private void handleException(Exception e) {
 		JOptionPane.showMessageDialog(this, e.getMessage(), "Exception", JOptionPane.ERROR_MESSAGE);
 	}
-	
-	//WindowListener Overridden Functions
+
+	// WindowListener Overridden Functions
 
 	@Override
 	public void windowActivated(WindowEvent arg0) {
@@ -421,7 +448,6 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 
 	@Override
 	public void windowDeiconified(WindowEvent arg0) {
-		System.out.println("DEICONIFIED : "+ this.getLocationOnScreen());
 		if (isRecording) {
 			try {
 				ScreenCapture.deleteImage(path.getText().trim() + "\\" + name.getText(), "\\" + name.getText(),
@@ -434,7 +460,14 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 
 	@Override
 	public void windowIconified(WindowEvent arg0) {
-		System.out.println("ICONIFIED : "+this.getLocationOnScreen());
+		if (isRecording && this.taskbarIconClicked) {
+			try {
+				ScreenCapture.deleteImage(path.getText().trim() + "\\" + name.getText(), "\\" + name.getText(),
+						--index);
+			} catch (Exception e) {
+				System.out.println(e.getMessage());
+			}
+		}
 	}
 
 	@Override

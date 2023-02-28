@@ -17,7 +17,7 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 
 public class DocumentSaver {
 	public static void saveToDocumentFile(String folderPath, String name) throws IOException, InvalidFormatException {
-		File folder = new File(folderPath + name + "\\");
+		File folder = new File(folderPath);
 		File[] listOfImages = folder.listFiles();
 		XWPFDocument document = new XWPFDocument();
 		FileOutputStream output = new FileOutputStream(new File(folderPath + name + ".docx"));

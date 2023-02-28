@@ -18,18 +18,17 @@ import org.apache.commons.io.FileUtils;
 
 public class FileOperations {
 
-	public static ArrayList<File> deleteFolderAndContents(String folderPath){
+	public static ArrayList<File> deleteFolderAndContents(String folderPath, String docName){
 		ArrayList<File> unDeletedFiles = new ArrayList<File>();
 		File folder = new File(folderPath);
 		File[] listOfImages = folder.listFiles();
 		for (File image : listOfImages) {
+			if(image.getName().equalsIgnoreCase(docName))
+				continue;
 			image.delete();
 			if(image.exists()) {
 				unDeletedFiles.add(image);
 			}
-		}
-		if(unDeletedFiles.isEmpty()) {
-			folder.delete();
 		}
 		return unDeletedFiles;
 	}
