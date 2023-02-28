@@ -1,20 +1,19 @@
 package com.org.sr;
 
-import java.awt.Dimension;
+import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Image;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
@@ -28,7 +27,6 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.EmptyBorder;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.jnativehook.GlobalScreen;
@@ -66,16 +64,14 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 
 		// Get the logger for "org.jnativehook" and set the level to off.
 		Logger logger = Logger.getLogger(GlobalScreen.class.getPackage().getName());
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			System.out.println(ScreenRecorderUI.saveConfig);
-			if(ScreenRecorderUI.saveConfig == 1) {
-				try {
-					FileUtils.deleteDirectory(new File(ScreenRecorderUI.folderToBeDeleted));
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}));
+		logger.setLevel(Level.OFF);
+		/*
+		 * Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+		 * System.out.println(ScreenRecorderUI.saveConfig);
+		 * if(ScreenRecorderUI.saveConfig == 1) { try { FileUtils.deleteDirectory(new
+		 * File(ScreenRecorderUI.folderToBeDeleted)); } catch (IOException e) {
+		 * e.printStackTrace(); } } }));
+		 */
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -247,7 +243,8 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 		} else if ("Save".equalsIgnoreCase(e.getActionCommand())) {
 			try {
 				String ObjButtons[] = { "Yes", "No" };
-				saveConfig = JOptionPane.showOptionDialog(this, "Do you also want to keep the screenshots?",
+				saveConfig = JOptionPane.showOptionDialog(this, "Do you also want to keep the screenshots?"
+						+ "\nNote: Automatic screenshot deletion not guarranteed.",
 						"Save Confirmation", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null,
 						ObjButtons, ObjButtons[0]);
 				if(saveConfig == JOptionPane.YES_OPTION) {
@@ -257,7 +254,16 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 					DocumentSaver.saveToDocumentFile(path.getText().trim() + "\\", name.getText());
 					//FileUtils.forceDeleteOnExit(new File(path.getText().trim()+"\\"+name.getText()+"\\"));
 					ScreenRecorderUI.folderToBeDeleted = path.getText().trim()+"\\"+name.getText()+"\\";
-					JOptionPane.showMessageDialog(this, "Document saved successfully\nand screenshots deleted!", "Save Successful", JOptionPane.INFORMATION_MESSAGE);
+					ArrayList<File> unDeletedFiles = FileOperations.deleteFolderAndContents(folderToBeDeleted);
+					if(unDeletedFiles!=null && !unDeletedFiles.isEmpty()) {
+						JOptionPane.showMessageDialog(this, "Document saved successfully"
+								+ "\nbut some screenshots could not be deleted!"
+								+ "\nmanual deletion required", "Save Successful", JOptionPane.WARNING_MESSAGE);
+						Desktop.getDesktop().open(new File(ScreenRecorderUI.folderToBeDeleted));
+					}else {
+						JOptionPane.showMessageDialog(this, "Document saved successfully"
+								+ "\nand all screenshots deleted!", "Save Successful, Automatic Deletion Failed", JOptionPane.INFORMATION_MESSAGE);						
+					}
 				}
 			} catch (IOException e1) {
 				this.handleException(e1);
