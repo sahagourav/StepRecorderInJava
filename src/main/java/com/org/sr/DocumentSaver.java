@@ -18,7 +18,7 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 public class DocumentSaver {
 	public static void saveToDocumentFile(String folderPath, String name) throws IOException, InvalidFormatException {
 		File folder = new File(folderPath);
-		File[] listOfImages = folder.listFiles();
+		File[] listOfImages = DocumentSaver.sortFiles(folder.listFiles());
 		XWPFDocument document = new XWPFDocument();
 		FileOutputStream output = new FileOutputStream(new File(folderPath + name + ".docx"));
 		Integer count = 1;
@@ -48,5 +48,22 @@ public class DocumentSaver {
 	    document.write(output);
 	    document.close();
 	    output.close();
+	}
+
+	private static File[] sortFiles(File[] listOfImages) {
+		File temp = listOfImages[0];
+		for(int i=0; i < listOfImages.length; i++){
+			for(int j=1; j < (listOfImages.length-i); j++){
+				Integer position1 = Integer.parseInt(listOfImages[j-1].getName().substring(listOfImages[j-1].getName().indexOf("_")+1, listOfImages[j-1].getName().indexOf(".jpeg")));
+				Integer position2 = Integer.parseInt(listOfImages[j].getName().substring(listOfImages[j].getName().indexOf("_")+1, listOfImages[j].getName().indexOf(".jpeg")));
+				if(position1 > position2) {
+					temp = listOfImages[j-1];
+					listOfImages[j-1] = listOfImages[j];
+					listOfImages[j] = temp;
+				}
+
+			}
+		}
+		return listOfImages;
 	}
 }
