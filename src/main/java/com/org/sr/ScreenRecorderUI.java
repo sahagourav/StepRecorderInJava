@@ -12,6 +12,7 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -55,7 +56,7 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 
 	private static int saveConfig = 0;
 	private Boolean isMouseListenerActive = Boolean.FALSE;
-	private static String folderToBeDeleted = "";
+	private static String qualifiedFolderPath = "";
 	private HashMap<String, Integer> taskBarBounds;
 
 	private Boolean taskbarIconClicked = Boolean.FALSE;
@@ -255,22 +256,32 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 				this.handleException(e1);
 			}
 		} else if ("Save".equalsIgnoreCase(e.getActionCommand())) {
-			ScreenRecorderUI.folderToBeDeleted = path.getText().trim() + "\\" + name.getText() + "\\";
-			File folder = new File(ScreenRecorderUI.folderToBeDeleted);
-			if (!(folder.exists() && folder.isDirectory() && folder.listFiles().length > 0)) {
+			ScreenRecorderUI.qualifiedFolderPath = path.getText().trim() + "\\" + name.getText() + "\\";
+			File folder = new File(ScreenRecorderUI.qualifiedFolderPath);
+			File[] sortedFiles = DocumentSaver.sortFiles(folder, name.getText());
+			if (!(folder.exists() && folder.isDirectory() && folder.listFiles().length > 0 && sortedFiles != null
+					&& sortedFiles.length > 0)) {
 				JOptionPane.showMessageDialog(this,
-						"No files found for saving in folder: " + path.getText() + "\\" + name.getText()
-								+ "\nPlease record a project or go to a directory where screenshots are present",
+						"No screenshots found for saving in folder: " + path.getText() + "\\" + name.getText()
+								+ "\nPlease record a project or follow below instructions for existing screenshots"
+								+ "\nScreenshot Saving Pre-requites"
+								+ "\n    • Must contain supported file types (.jpep, .bmp, .png)"
+								+ "\n    • Screenshot names must start with document name followed by _"
+								+ "\n    • Must be numbered based on steps." + "\n" + "\nExample"
+								+ "\n    Document Name : Foo" + "\n    Screenshot Names : Foo_1.jpeg, Foo_2.jpeg, etc",
 						"No files found", JOptionPane.WARNING_MESSAGE);
 				return;
 			}
 			try {
-				String ObjButtons[] = { "Yes", "No" };
+				String ObjButtons[] = { "Yes", "No", "Cancel" };
 				saveConfig = JOptionPane.showOptionDialog(this,
 						"Keep the screenshots?",
 						"Save Confirmation", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, ObjButtons,
 						ObjButtons[0]);
-				DocumentSaver.saveToDocumentFile(ScreenRecorderUI.folderToBeDeleted, name.getText());
+				if (saveConfig == JOptionPane.CANCEL_OPTION) {
+					return;
+				}
+				DocumentSaver.saveToDocumentFile(ScreenRecorderUI.qualifiedFolderPath, name.getText(), sortedFiles);
 				if (saveConfig == JOptionPane.YES_OPTION) {
 					JOptionPane
 							.showMessageDialog(this,
@@ -278,11 +289,20 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 											+ "\\" + name.getText(),
 									"Save Successful", JOptionPane.INFORMATION_MESSAGE);
 				} else {
-					JOptionPane.showMessageDialog(this,
+					ArrayList<File> unDeletedFiles = FileOperations.deleteFolderAndContents(qualifiedFolderPath,
+							name.getText() + ".docx");
+					if (unDeletedFiles != null && !unDeletedFiles.isEmpty()) {
+						JOptionPane.showMessageDialog(this,
+								"Document saved successfully but some" + "\nscreenshots could not be deleted",
+								"Save Successful", JOptionPane.WARNING_MESSAGE);
+						Desktop.getDesktop().open(new File(ScreenRecorderUI.qualifiedFolderPath));
+					} else {
+						JOptionPane.showMessageDialog(this,
 								"Document saved successfully" + "\nand all screenshots deleted!",
 								"Save Successful, Automatic Deletion Failed", JOptionPane.INFORMATION_MESSAGE);
+					}
 				}
-				Desktop.getDesktop().open(new File(ScreenRecorderUI.folderToBeDeleted));
+				Desktop.getDesktop().open(new File(ScreenRecorderUI.qualifiedFolderPath));
 			} catch (IOException e1) {
 				this.handleException(e1);
 			} catch (InvalidFormatException e1) {
