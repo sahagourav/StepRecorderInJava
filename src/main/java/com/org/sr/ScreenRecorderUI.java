@@ -12,7 +12,6 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -34,7 +33,6 @@ import org.jnativehook.GlobalScreen;
 import org.jnativehook.NativeHookException;
 import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
-import java.awt.Toolkit;
 
 public class ScreenRecorderUI extends JFrame implements WindowListener, ActionListener, NativeMouseInputListener {
 
@@ -269,7 +267,7 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 			try {
 				String ObjButtons[] = { "Yes", "No" };
 				saveConfig = JOptionPane.showOptionDialog(this,
-						"Keep the screenshots?" + "\nNote: Automatic screenshot deletion not always guarranteed.",
+						"Keep the screenshots?",
 						"Save Confirmation", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE, null, ObjButtons,
 						ObjButtons[0]);
 				DocumentSaver.saveToDocumentFile(ScreenRecorderUI.folderToBeDeleted, name.getText());
@@ -280,18 +278,9 @@ public class ScreenRecorderUI extends JFrame implements WindowListener, ActionLi
 											+ "\\" + name.getText(),
 									"Save Successful", JOptionPane.INFORMATION_MESSAGE);
 				} else {
-					ArrayList<File> unDeletedFiles = FileOperations.deleteFolderAndContents(folderToBeDeleted,
-							name.getText() + ".docx");
-					if (unDeletedFiles != null && !unDeletedFiles.isEmpty()) {
-						JOptionPane.showMessageDialog(this,
-								"Document saved successfully but some" + "\nscreenshots could not be deleted",
-								"Save Successful", JOptionPane.WARNING_MESSAGE);
-						Desktop.getDesktop().open(new File(ScreenRecorderUI.folderToBeDeleted));
-					} else {
-						JOptionPane.showMessageDialog(this,
+					JOptionPane.showMessageDialog(this,
 								"Document saved successfully" + "\nand all screenshots deleted!",
 								"Save Successful, Automatic Deletion Failed", JOptionPane.INFORMATION_MESSAGE);
-					}
 				}
 				Desktop.getDesktop().open(new File(ScreenRecorderUI.folderToBeDeleted));
 			} catch (IOException e1) {

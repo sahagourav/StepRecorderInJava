@@ -44,6 +44,7 @@ public class DocumentSaver {
 			XWPFRun run = paragraph.createRun();
 			run.setText("Step " + count++ + ": \n");
 			run.addPicture(imageData, imageType, imageFileName, Units.toEMU(width*scaling), Units.toEMU(height*scaling));
+			imageData.close();
 		}
 	    document.write(output);
 	    document.close();
